@@ -1,50 +1,41 @@
-pipeline {
-    agent any
+pipeline:
+  agent:
+    any: true
 
-    stages {
-        stage("Checkout git code") {
-            steps {
-                git branch: "main", url: "https://github.com/Veronika0601/Workshop_2_Jenkins_Task_1"
-            }
-        }
+  stages:
+    - stage: "Checkout git code"
+      steps:
+        - checkout:
+            scm:
+              git:
+                url: "https://github.com/Veronika0601/Workshop_2_Jenkins_Task_1"
+                branch: "main"
 
-        stage("Setup dotnet 6") {
-            steps {
-                bat '''
-                curl --ssl-no-revoke -L -o dotnet-sdk-6.0.136-win-x86.exe https://download.visualstudio.microsoft.com/download/pr/4d3e3aaf-755f-4a17-b8fc-6f8e924a5b26/e2df2be9b11dd8884df40ee27239d02d/dotnet-sdk-6.0.136-win-x86.exe
-                dotnet-sdk-6.0.136-win-x86.exe /quiet /norestart
-                '''
-            }
-        }
+    - stage: "Setup dotnet 6"
+      steps:
+        - bat: |
+            curl --ssl-no-revoke -L -o dotnet-sdk-6.0.136-win-x64.exe https://download.visualstudio.microsoft.com/download/pr/f7328260-56c1-48b5-a2ec-6b8e84548da1/624e4c12d20f7e56c3e0e8e2821f2b89/dotnet-sdk-6.0.136-win-x64.exe
+            dotnet-sdk-6.0.136-win-x64.exe /quiet /norestart
+            dotnet --info
 
-        stage("Install nuget packages") {
-            steps {
-                bat "dotnet restore SeleniumIde.sln"
-            }
-        }
+    - stage: "Install nuget packages"
+      steps:
+        - bat: "dotnet restore SeleniumIde.sln"
 
-        stage("Build the project") {
-            steps {
-                bat "dotnet build SeleniumIde.sln"
-            }
-        }
+    - stage: "Build the project"
+      steps:
+        - bat: "dotnet build SeleniumIde.sln"
 
-        stage("Run tests") {
-            steps {
-                bat 'dotnet test SeleniumIde.sln --logger "trx;LogFileName=TestResults.trx"'
-            }
-        }
-    }
+    - stage: "Run tests"
+      steps:
+        - bat: 'dotnet test SeleniumIde.sln --logger "trx;LogFileName=TestResults.trx"'
 
-    post {
-        always {
-            archiveArtifacts artifacts: '**/TestResults/*.trx', allowEmptyArchive: true
-            // Ако искаш да използваш MStestPublisher, увери се, че plugin-ът е инсталиран
-            // В противен случай закоментирай реда по-долу:
-            step([
-                $class: 'MSTestPublisher',
-                testResultsFile: '**/TestResults/*.trx'
-            ])
-        }
-    }
-}
+  post:
+    always:
+      steps:
+        - archiveArtifacts:
+            artifacts: '**/TestResults/*.trx'
+            allowEmptyArchive: true
+        # - step:
+        #     $class: 'MStestPublisher'
+        #     testResultsFile: '**/TestResults/*.trx'
